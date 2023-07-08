@@ -171,7 +171,7 @@ exports.findAll = (req, res) => {
    Symbols.find()
       .sort({ spreads: "desc" })
       .then((data) => {
-         res.send(data)
+         res.send(data);
          console.log("Data Retrived");
       })
       .catch((err) => {
@@ -286,6 +286,9 @@ const Chacking = () => {
       .catch((error) => {
          console.log("Error " + symbol);
       });
+
+};
+const acc = () => {
    Symbols.find()
       .sort({ spreads: "desc" })
       .then((data) => {
@@ -305,9 +308,74 @@ const Chacking = () => {
                      if (symbol.length == 0) {
                         console.log("No Symblo");
                      } else {
-
                      }
+                     Checking.find()
+                        .sort({ spreads: 1 })
+                        .then((check) => {
+                           CheckingRSI(check);
+                           if (symbol[0] > check[0]) {
+                              Checking.findByIdAndRemove(check[0]._id, {
+                                 useFindAndModify: false,
+                              })
+                                 .then((data) => {
+                                    if (!data) {
+                                    } else {
+                                       console.log(
+                                          "location was deleted successfully!"
+                                       );
+                                    }
+                                 })
+                                 .catch((err) => {
+                                    console.log(err);
+                                 });
+                              Checking.findOne(
+                                 { name: data[0].name },
+                                 (error, document) => {
+                                    if (error) {
+                                       console.error(
+                                          "An error occurred while finding the document:",
+                                          error
+                                       );
+                                       return;
+                                    }
+                                    if (document) {
+                                       UpdateData(check);
+                                    } else {
+                                       const location = new Checking({
+                                          name: data[0].name
+                                             ? data[0].name
+                                             : "LINAUSDT",
+                                          spreads: data[0].spreads
+                                             ? data[0].spreads
+                                             : "",
+                                       });
+                                       location
+                                          .save(location)
+                                          .then((res) => {
+                                             console.log(
+                                                `New checking created!`,
+                                                res
+                                             );
+                                          })
+                                          .catch((err) => {
+                                             console.log("Err", err);
+                                          });
+                                    }
 
+                                    // The `document` variable contains the first document matching the value
+                                 }
+                              );
+                           } else {
+                              console.log(
+                                 " / / / / / / / / / / " +
+                                    check[0]._id +
+                                    " / / / / / / / / / /  / / "
+                              );
+                           }
+                        })
+                        .catch((err) => {});
+                  })
+                  .catch((err) => {});
             } else {
                Checking.findOne({ name: data[0].title }, (error, document) => {
                   if (error) {
@@ -343,7 +411,8 @@ const Chacking = () => {
          });
       })
       .catch((err) => {});
-};
+
+}
 exports.findOne = (req, res) => {
    const id = req.params.id;
 
