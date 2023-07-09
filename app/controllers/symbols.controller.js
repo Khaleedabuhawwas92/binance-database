@@ -5,6 +5,8 @@ const Symbols = db.symbols;
 const Checking = db.checking;
 const cron = require("node-cron");
 const { StochasticRSI } = require("technicalindicators");
+const axios = require("axios");
+
 const stochLinePeriod = 14;
 const rsiLinePeriod = 14;
 const kPeriod = 3;
@@ -19,7 +21,7 @@ function CheckingRSI(data) {
    data.forEach((currency, index) => {
       const symbol = currency.name;
       client
-         .candles({ symbol, interval: "1h", limit: 500 })
+         .candles({ symbol, interval: "4h", limit: 500 })
          .then((candles) => {
             // Extract the closing prices from the candlestick data
             const closePrices = candles.map((candle) =>
@@ -183,8 +185,8 @@ exports.findAll = (req, res) => {
 };
 
 // Find a single Tutorial with an id
-const Chacking = () => {
-   client
+const Chacking = async () => {
+   await client
       .exchangeInfo()
       .then((exchangeInfo) => {
          // Get all symbols
@@ -209,21 +211,21 @@ const Chacking = () => {
                !array2.includes(symbol.symbol)
             // Filter condition - adjust as per your requirements
          );
-         Symbols.deleteMany({})
-            .then((data) => {
-               console.log(
-                  " were deleted successfully! / / / / / / / / / / / / / / / / / / / / / / / / / / /"
-               );
-            })
-            .catch((err) => {
-               console.log(err);
-            });
+         // Symbols.deleteMany({})
+         //    .then((data) => {
+         //       console.log(
+         //          " were deleted successfully! / / / / / / / / / / / / / / / / / / / / / / / / / / /"
+         //       );
+         //    })
+         //    .catch((err) => {
+         //       console.log(err);
+         //    });
 
          // Iterate over the filtered currencies
          goodCurrencies.forEach((currency, index) => {
             const symbol = currency.symbol;
             client
-               .candles({ symbol, interval: "1h", limit: 500 })
+               .candles({ symbol, interval: "4h", limit: 500 })
                .then((candles) => {
                   // Extract the closing prices from the candlestick data
                   const closePrices = candles.map((candle) =>
@@ -248,10 +250,10 @@ const Chacking = () => {
 
                   // Check if the MA Stoch RSI Line is between %K and %D range
                   if (
-                     (maStochLineCurrent >= kRange[0] &&
-                        maStochLineCurrent <= kRange[1]) ||
-                     (maStochRsiLineCurrent >= dRange[0] &&
-                        maStochRsiLineCurrent <= dRange[1])
+                     maStochLineCurrent >= kRange[0] &&
+                     maStochLineCurrent <= kRange[1] &&
+                     maStochRsiLineCurrent >= dRange[0] &&
+                     maStochRsiLineCurrent <= dRange[1]
                   ) {
                      if (maStochLineCurrent > maStochRsiLineCurrent) {
                         // const value =
@@ -259,26 +261,30 @@ const Chacking = () => {
                         const value =
                            maStochLineCurrent - maStochRsiLineCurrent;
 
-                        const symbols = new Symbols({
-                           title: symbol ? symbol : "SCUSDT",
-                           spreads: value ? value : 3.657559198542803,
-                        });
+                        // const symbols = new Symbols({
+                        //    title: symbol ? symbol : "SCUSDT",
+                        //    spreads: value ? value : 3.657559198542803,
+                        // });
 
-                        // Save symbols in the database
-                        symbols
-                           .save(symbols)
-                           .then((data) => {
-                              console.log("saved");
-                           })
-                           .catch((err) => {
-                              console.log(err);
-                           });
+                        // // Save symbols in the database
+                        // symbols
+                        //    .save(symbols)
+                        //    .then((data) => {
+                        //       console.log("saved");
+                        //    })
+                        //    .catch((err) => {
+                        //       console.log(err);
+                        //    });
+                        console.log("Saved" + symbol);
                      } else {
+                        console.log(symbol);
                      }
                   } else {
                   }
                })
-               .catch((error) => {});
+               .catch((error) => {
+                  console.log(error);
+               });
 
             // Fetch historical candlestick data for the symbol
          });
@@ -286,7 +292,6 @@ const Chacking = () => {
       .catch((error) => {
          console.log("Error " + symbol);
       });
-
 };
 const acc = () => {
    Symbols.find()
@@ -411,8 +416,7 @@ const acc = () => {
          });
       })
       .catch((err) => {});
-
-}
+};
 exports.findOne = (req, res) => {
    const id = req.params.id;
 
@@ -535,8 +539,105 @@ exports.findAllPublished = (req, res) => {
          });
       });
 };
-cron.schedule("*/30 * * * * *", () => {
-   Chacking();
+
+const fetchCurrencyList = async () => {
+   try {
+      const response = await axios.get("https://api.example.com/currencies"); // Replace with the appropriate API endpoint
+      return response.data;
+   } catch (error) {
+      console.error("Error fetching currency list:", error);
+      throw error;
+   }
+};
+const compareAndSaveResults = async () => {
+   const currencyList = await fetchCurrencyList();
+
+   const results = [];
+
+   for (const currency of currencyList) {
+      const maStochLineCurrent = calculateMaStochLineCurrent(currency);
+      const maStochRsiLineCurrent = calculateMaStochRsiLineCurrent(currency);
+
+      if (maStochLineCurrent > maStochRsiLineCurrent) {
+         results.push(currency);
+      }
+   }
+
+   // Save the results or perform further actions
+   console.log("Currencies meeting the condition:", results);
+};
+const calculateSMA = (values, period) => {
+   const sum = values.slice(-period).reduce((total, value) => total + value, 0);
+   return sum / period;
+};
+
+// Function to fetch historical data for a symbol
+const fetchHistoricalData = async (symbol) => {
+   try {
+      const response = await axios.get(
+         "https://api.binance.com/api/v3/klines",
+         {
+            params: {
+               symbol: symbol,
+               interval: "4h",
+               limit: 100,
+            },
+         }
+      );
+
+      // Extract the closing prices for the StochRSI calculation
+      const closingPrices = response.data.map((item) => parseFloat(item[4]));
+
+      // Calculate the maStochLineCurrent using a 10-period SMA of StochRSI values
+      const maStochLineCurrent = calculateSMA(closingPrices, 10);
+
+      // Calculate the maStochRsiLineCurrent using a 5-period SMA of StochRSI values
+      const maStochRsiLineCurrent = calculateSMA(closingPrices, 5);
+
+      // Compare the maStochLineCurrent with maStochRsiLineCurrent
+      if (maStochLineCurrent > maStochRsiLineCurrent) {
+         console.log(
+            `${symbol}: maStochLineCurrent is greater than maStochRsiLineCurrent`
+         );
+      } else {
+         console.log(
+            `${symbol}: maStochLineCurrent is not greater than maStochRsiLineCurrent`
+         );
+      }
+   } catch (error) {
+      console.error(`Error fetching data for symbol ${symbol}:`, error.message);
+   }
+};
+
+// Function to fetch all symbols and perform the comparison
+const fetchAllSymbolsAndCompare = async () => {
+   try {
+      const response = await axios.get(
+         "https://api.binance.com/api/v3/exchangeInfo"
+      );
+
+      // Extract the symbols from the response data
+      const symbols = response.data.symbols
+         .filter(
+            (symbol) =>
+               symbol.quoteAsset === "USDT" &&
+               symbol.isSpotTradingAllowed &&
+               symbol.status === "TRADING"
+         )
+         .map((symbol) => symbol.symbol);
+
+      // Fetch historical data and perform the comparison for each symbol
+      for (const symbol of symbols) {
+         await fetchHistoricalData(symbol);
+      }
+   } catch (error) {
+      console.error("Error fetching symbols:", error.message);
+   }
+};
+cron.schedule("*/60 * * * * *", () => {
+   fetchAllSymbolsAndCompare();
+   console.log(" / / / / / / / / / / / / / / / ");
+
 });
 
 // cron.schedule("* * * * * *", () => {
