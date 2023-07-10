@@ -596,9 +596,9 @@ const fetchHistoricalData = async (symbol) => {
 // Function to fetch all symbols and perform the comparison
 const fetchAllSymbolsAndCompare = async () => {
    try {
-      const response = await axios.get(
-         "https://api.binance.com/api/v3/exchangeInfo"
-      );
+      const symbols = await client.exchangeInfo();
+
+
       const array2 = [
          "BUSDUSDT",
          "BTTCUSDT",
@@ -611,7 +611,7 @@ const fetchAllSymbolsAndCompare = async () => {
          "FUNUSDT",
       ];
       // Extract the symbols from the response data
-      const symbols = response.data.symbols
+      const filteredSymbols = symbols.symbols
          .filter(
             (symbol) =>
                symbol.quoteAsset === "USDT" &&
@@ -622,14 +622,15 @@ const fetchAllSymbolsAndCompare = async () => {
          .map((symbol) => symbol.symbol);
 
       // Fetch historical data and perform the comparison for each symbol
-      for (const symbol of symbols) {
+      for (const symbol of filteredSymbols) {
          await fetchHistoricalData(symbol);
       }
    } catch (error) {
       console.error("Error fetching symbols:", error.message);
    }
 };
-cron.schedule("*/5 * * * *", () => {
+
+cron.schedule("*/5  * * * *", () => {
    fetchAllSymbolsAndCompare();
    console.log(" / / / / / / / / / / / / / / / ");
 });
