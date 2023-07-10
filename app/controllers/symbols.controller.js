@@ -599,14 +599,25 @@ const fetchAllSymbolsAndCompare = async () => {
       const response = await axios.get(
          "https://api.binance.com/api/v3/exchangeInfo"
       );
-
+      const array2 = [
+         "BUSDUSDT",
+         "BTTCUSDT",
+         "USDCUSDT",
+         "TUSDUSDT",
+         "BTCUSDT",
+         "ETHUSDT",
+         "USDPUSDT",
+         "EURUSDT",
+         "FUNUSDT",
+      ];
       // Extract the symbols from the response data
       const symbols = response.data.symbols
          .filter(
             (symbol) =>
                symbol.quoteAsset === "USDT" &&
                symbol.isSpotTradingAllowed &&
-               symbol.status === "TRADING"
+               symbol.status === "TRADING" &&
+               !array2.includes(symbol.symbol)
          )
          .map((symbol) => symbol.symbol);
 
@@ -618,10 +629,9 @@ const fetchAllSymbolsAndCompare = async () => {
       console.error("Error fetching symbols:", error.message);
    }
 };
-cron.schedule("*/60 * * * * *", () => {
+cron.schedule("*/5 * * * *", () => {
    fetchAllSymbolsAndCompare();
    console.log(" / / / / / / / / / / / / / / / ");
-
 });
 
 // cron.schedule("* * * * * *", () => {
