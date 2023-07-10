@@ -22,7 +22,7 @@ async function saveSymbolIfNotExists(newSymbol) {
          console.log("Symbol already exists:", existingSymbol);
       } else {
          const location = new Checking({
-            name: symbol ? symbol : "LINAUSDT",
+            name: newSymbol ? symbol : "LINAUSDT",
          });
          location
             .save(location)
