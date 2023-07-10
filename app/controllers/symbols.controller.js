@@ -13,8 +13,31 @@ const kPeriod = 3;
 const dPeriod = 3;
 
 // Set the %K and %D range
-const kRange = [0, 20];
+const kRange = [20, 80];
 const dRange = [0, 20];
+async function saveSymbolIfNotExists(newSymbol) {
+   try {
+      const existingSymbol = await Checking.findOne({ name: newSymbol });
+      if (existingSymbol) {
+         console.log("Symbol already exists:", existingSymbol);
+      } else {
+         const location = new Checking({
+            name: symbol ? symbol : "LINAUSDT",
+         });
+         location
+            .save(location)
+            .then((res) => {
+               console.log(`New checking created!`, res);
+            })
+            .catch((err) => {
+               console.log("Err", err);
+            });
+         console.log("Symbol saved:", savedSymbol);
+      }
+   } catch (error) {
+      console.error("Error checking/saving symbol:", error);
+   }
+}
 function CheckingRSI(data) {
    const kRange1 = [0, 20];
    const dRange1 = [0, 20];
@@ -241,7 +264,6 @@ const Chacking = async () => {
                      dPeriod,
                   };
                   const stochRsi = StochasticRSI.calculate(stochRsiInput);
-
 
                   // Get the last value of the MA Stoch Line and MA Stoch RSI Line
                   const maStochLineCurrent = stochRsi[stochRsi.length - 1].k;
@@ -551,14 +573,8 @@ const fetchCurrencyList = async () => {
    }
 };
 
-const calculateSMA = (values, period) => {
-   const sum = values.slice(-period).reduce((total, value) => total + value, 0);
-   return sum / period;
-};
-
 // Function to fetch historical data for a symbol
 const fetchHistoricalData = async (symbol) => {
-
    try {
       const response = await axios.get(
          "https://api.binance.com/api/v3/klines",
@@ -582,21 +598,18 @@ const fetchHistoricalData = async (symbol) => {
       };
       const stochRsi = StochasticRSI.calculate(stochRsiInput);
       const maStochLineCurrent1 = stochRsi[stochRsi.length - 1].k;
-            const maStochRsiLineCurrent1 = stochRsi[stochRsi.length - 1].d;
-
-
-      // Calculate the maStochLineCurrent using a 10-period SMA of StochRSI values
-      const maStochLineCurrent = calculateSMA(closingPrices, 10);
-
-      // Calculate the maStochRsiLineCurrent using a 5-period SMA of StochRSI values
-      const maStochRsiLineCurrent = calculateSMA(closingPrices, 5);
-
+      const maStochRsiLineCurrent1 = stochRsi[stochRsi.length - 1].d;
 
       // Compare the maStochLineCurrent with maStochRsiLineCurrent
-      if (maStochLineCurrent > maStochRsiLineCurrent && maStochLineCurrent1>=0 &&maStochRsiLineCurrent1<=20 ) {
-         console.log(
-            `${symbol}: hiiiiiiiiiiiii`
-         );
+      if (
+         maStochLineCurrent1 >= kRange[0] &&
+         maStochLineCurrent1 <= kRange[1] &&
+         maStochRsiLineCurrent1 >= dRange[0] &&
+         maStochRsiLineCurrent1 <= dRange[1]
+      ) {
+         saveSymbolIfNotExists(symbol)
+
+         console.log(`${symbol}: hiiiiiiiiiiiii`);
       } else {
          console.log(
             `${symbol}: maStochLineCurrent is not greater than maStochRsiLineCurrent`
