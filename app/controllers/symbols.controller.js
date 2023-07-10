@@ -549,23 +549,7 @@ const fetchCurrencyList = async () => {
       throw error;
    }
 };
-const compareAndSaveResults = async () => {
-   const currencyList = await fetchCurrencyList();
 
-   const results = [];
-
-   for (const currency of currencyList) {
-      const maStochLineCurrent = calculateMaStochLineCurrent(currency);
-      const maStochRsiLineCurrent = calculateMaStochRsiLineCurrent(currency);
-
-      if (maStochLineCurrent > maStochRsiLineCurrent) {
-         results.push(currency);
-      }
-   }
-
-   // Save the results or perform further actions
-   console.log("Currencies meeting the condition:", results);
-};
 const calculateSMA = (values, period) => {
    const sum = values.slice(-period).reduce((total, value) => total + value, 0);
    return sum / period;
