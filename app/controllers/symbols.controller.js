@@ -242,6 +242,7 @@ const Chacking = async () => {
                   };
                   const stochRsi = StochasticRSI.calculate(stochRsiInput);
 
+
                   // Get the last value of the MA Stoch Line and MA Stoch RSI Line
                   const maStochLineCurrent = stochRsi[stochRsi.length - 1].k;
                   const maStochRsiLineCurrent = stochRsi[stochRsi.length - 1].d;
@@ -557,6 +558,7 @@ const calculateSMA = (values, period) => {
 
 // Function to fetch historical data for a symbol
 const fetchHistoricalData = async (symbol) => {
+
    try {
       const response = await axios.get(
          "https://api.binance.com/api/v3/klines",
@@ -568,9 +570,20 @@ const fetchHistoricalData = async (symbol) => {
             },
          }
       );
-
       // Extract the closing prices for the StochRSI calculation
       const closingPrices = response.data.map((item) => parseFloat(item[4]));
+
+      const stochRsiInput = {
+         values: closingPrices,
+         rsiPeriod: rsiLinePeriod,
+         stochasticPeriod: stochLinePeriod,
+         kPeriod,
+         dPeriod,
+      };
+      const stochRsi = StochasticRSI.calculate(stochRsiInput);
+      const maStochLineCurrent1 = stochRsi[stochRsi.length - 1].k;
+            const maStochRsiLineCurrent1 = stochRsi[stochRsi.length - 1].d;
+
 
       // Calculate the maStochLineCurrent using a 10-period SMA of StochRSI values
       const maStochLineCurrent = calculateSMA(closingPrices, 10);
@@ -578,10 +591,11 @@ const fetchHistoricalData = async (symbol) => {
       // Calculate the maStochRsiLineCurrent using a 5-period SMA of StochRSI values
       const maStochRsiLineCurrent = calculateSMA(closingPrices, 5);
 
+
       // Compare the maStochLineCurrent with maStochRsiLineCurrent
-      if (maStochLineCurrent > maStochRsiLineCurrent) {
+      if (maStochLineCurrent > maStochRsiLineCurrent && maStochLineCurrent1>=0 &&maStochRsiLineCurrent1<=20 ) {
          console.log(
-            `${symbol}: maStochLineCurrent is greater than maStochRsiLineCurrent`
+            `${symbol}: hiiiiiiiiiiiii`
          );
       } else {
          console.log(
@@ -596,9 +610,9 @@ const fetchHistoricalData = async (symbol) => {
 // Function to fetch all symbols and perform the comparison
 const fetchAllSymbolsAndCompare = async () => {
    try {
-      const symbols = await client.exchangeInfo();
-
-
+      const response = await axios.get(
+         "https://api.binance.com/api/v3/exchangeInfo"
+      );
       const array2 = [
          "BUSDUSDT",
          "BTTCUSDT",
@@ -611,7 +625,7 @@ const fetchAllSymbolsAndCompare = async () => {
          "FUNUSDT",
       ];
       // Extract the symbols from the response data
-      const filteredSymbols = symbols.symbols
+      const symbols = response.data.symbols
          .filter(
             (symbol) =>
                symbol.quoteAsset === "USDT" &&
@@ -622,7 +636,7 @@ const fetchAllSymbolsAndCompare = async () => {
          .map((symbol) => symbol.symbol);
 
       // Fetch historical data and perform the comparison for each symbol
-      for (const symbol of filteredSymbols) {
+      for (const symbol of symbols) {
          await fetchHistoricalData(symbol);
       }
    } catch (error) {
